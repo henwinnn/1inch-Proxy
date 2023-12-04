@@ -5,7 +5,7 @@ Simple1inchProxy is a Node.js server designed to forward requests to the 1inch A
 
 This project requires Node version 20 or higher due to the use of `fetch`
 
-After that, simply run:
+Once the correct version of Node is set for the environment, simply run:
    ```
    npm install
    ```
