@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors')
 
 const app = express();
 const port = 3000;
@@ -8,6 +9,9 @@ const headers = {
     "Authorization": process.env.AUTHORIZATION,
     "Content-Type": "application/json"
 };
+
+// Middleware to give proper CORS permission to browser requests
+app.use(cors())
 
 // Middleware to handle request bodies
 app.use(express.json());
@@ -29,9 +33,9 @@ app.get('/', async (req, res) => {
     try {
         const response = await fetch(req.originalUrl.substring(6), { headers }); // Temporary hack to make this work with the Fusion SDK
         const data = await response.json();
-        return res.send(data);
+        res.json(data);
     } catch (error) {
-        return res.status(500).send('Error occurred while fetching data: ' + JSON.stringify(error));
+        res.status(500).send('Error occurred while fetching data: ' + JSON.stringify(error));
     }
 });
 
@@ -43,9 +47,9 @@ app.post('/', async (req, res) => {
             body: JSON.stringify(req.body.data)
         });
         const data = await response.json();
-        return res.send(data);
+        res.json(data);
     } catch (error) {
-        return res.status(500).send('Error occurred while fetching data: ' + JSON.stringify(error));
+        res.status(500).send('Error occurred while fetching data: ' + JSON.stringify(error));
     }
 });
 
