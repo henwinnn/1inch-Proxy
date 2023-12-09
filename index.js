@@ -14,7 +14,7 @@ app.use(express.json());
 
 // Middleware for URL validation
 app.use((req, res, next) => {
-    const url = req.query.url;
+    const url = req.originalUrl.substring(6); // Temporary hack to make this work with the Fusion SDK
 
     if (!url) {
         return res.status(400).send("Include `url` in the query string or request body");
@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 
 app.get('/', async (req, res) => {
     try {
-        const response = await fetch(req.query.url, { headers });
+        const response = await fetch(req.originalUrl.substring(6), { headers }); // Temporary hack to make this work with the Fusion SDK
         const data = await response.json();
         return res.send(data);
     } catch (error) {
