@@ -30,46 +30,57 @@ app.get("/", (req, res) => {
     hasAuthorization: !!process.env.AUTHORIZATION,
     timestamp: new Date().toISOString(),
     usage:
-      "Add the 1inch API URL after the domain, e.g., /https://api.1inch.dev/fusion/orders/v1.0/1/order/active",
+      "Add the 1inch API path after the domain, e.g., /fusion/orders/v1.0/1/order/active",
   });
 });
 
-// Middleware for URL validation
+// Middleware for URL validation and construction
 app.use((req, res, next) => {
-  // Handle different URL formats
-  let url = req.originalUrl.substring(1); // Remove leading slash
+  // Skip the health check endpoint
+  if (req.originalUrl === "/") {
+    return next();
+  }
+
+  // Get the API path (remove leading slash)
+  let apiPath = req.originalUrl.substring(1);
 
   // Handle query parameters that might be encoded
   if (req.query.url) {
-    url = req.query.url;
+    apiPath = req.query.url;
   }
 
   console.log("Original URL:", req.originalUrl);
   console.log("Query params:", req.query);
-  console.log("Extracted URL:", url);
-  console.log("URL length:", url.length);
+  console.log("Extracted API path:", apiPath);
   console.log("Environment:", process.env.NODE_ENV);
   console.log("Authorization header present:", !!process.env.AUTHORIZATION);
 
-  if (!url) {
+  if (!apiPath) {
     return res
       .status(400)
-      .json({ error: "Include `url` in the query string or request body" });
-  }
-  if (!url.startsWith("https://api.1inch.dev")) {
-    return res
-      .status(400)
-      .json({ error: "Base URL must start with https://api.1inch.dev" });
+      .json({ error: "Include API path after the domain, e.g., /fusion/orders/v1.0/1/order/active" });
   }
 
-  // Store the clean URL for use in route handlers
-  req.targetUrl = url;
+  // Construct the full 1inch API URL
+  let fullUrl;
+  if (apiPath.startsWith("https://api.1inch.dev")) {
+    // If user provides full URL, use it as is
+    fullUrl = apiPath;
+  } else {
+    // Prepend the 1inch API base URL
+    fullUrl = `https://api.1inch.dev/${apiPath}`;
+  }
+
+  console.log("Full API URL:", fullUrl);
+
+  // Store the full URL for use in route handlers
+  req.targetUrl = fullUrl;
   next();
 });
 
 app.get("/*", async (req, res) => {
   try {
-    const url = req.targetUrl || req.originalUrl.substring(1); // Use stored URL or fallback
+    const url = req.targetUrl; // Use the constructed full URL
     console.log("Fetching URL:", url);
 
     if (!process.env.AUTHORIZATION) {
@@ -104,14 +115,14 @@ app.get("/*", async (req, res) => {
   }
 });
 
-app.post("/", async (req, res) => {
+app.post("/*", async (req, res) => {
   try {
-    const url = req.query.url || req.body.url;
+    const url = req.targetUrl; // Use the constructed full URL
 
     if (!url) {
       return res
         .status(400)
-        .json({ error: "URL is required in query or body" });
+        .json({ error: "API path is required" });
     }
 
     if (!process.env.AUTHORIZATION) {
@@ -125,7 +136,7 @@ app.post("/", async (req, res) => {
     const response = await fetch(url, {
       method: "POST",
       headers: headers,
-      body: JSON.stringify(req.body.data || req.body),
+      body: JSON.stringify(req.body),
     });
 
     if (!response.ok) {
