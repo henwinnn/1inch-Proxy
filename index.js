@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const headers = {
   Authorization: process.env.AUTHORIZATION,
@@ -44,13 +44,13 @@ app.get("/*", async (req, res) => {
     const response = await fetch(url, { headers });
     console.log("Response status:", response.status);
     console.log("Response headers:", Object.fromEntries(response.headers));
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.log("Error response:", errorText);
       return res.status(response.status).send(errorText);
     }
-    
+
     const data = await response.json();
     res.json(data);
   } catch (error) {
@@ -77,6 +77,12 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+// For local development
+if (process.env.NODE_ENV !== "production") {
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+}
+
+// Export for Vercel
+module.exports = app;
