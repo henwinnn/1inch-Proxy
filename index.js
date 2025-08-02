@@ -29,7 +29,8 @@ app.get("/", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     hasAuthorization: !!process.env.AUTHORIZATION,
     timestamp: new Date().toISOString(),
-    usage: "Add the 1inch API URL after the domain, e.g., /https://api.1inch.dev/fusion/orders/v1.0/1/order/active"
+    usage:
+      "Add the 1inch API URL after the domain, e.g., /https://api.1inch.dev/fusion/orders/v1.0/1/order/active",
   });
 });
 
@@ -37,7 +38,7 @@ app.get("/", (req, res) => {
 app.use((req, res, next) => {
   // Handle different URL formats
   let url = req.originalUrl.substring(1); // Remove leading slash
-  
+
   // Handle query parameters that might be encoded
   if (req.query.url) {
     url = req.query.url;
@@ -60,7 +61,7 @@ app.use((req, res, next) => {
       .status(400)
       .json({ error: "Base URL must start with https://api.1inch.dev" });
   }
-  
+
   // Store the clean URL for use in route handlers
   req.targetUrl = url;
   next();
@@ -70,13 +71,13 @@ app.get("/*", async (req, res) => {
   try {
     const url = req.targetUrl || req.originalUrl.substring(1); // Use stored URL or fallback
     console.log("Fetching URL:", url);
-    
+
     if (!process.env.AUTHORIZATION) {
-      return res.status(500).json({ 
-        error: "Server configuration error: Missing authorization" 
+      return res.status(500).json({
+        error: "Server configuration error: Missing authorization",
       });
     }
-    
+
     const response = await fetch(url, { headers });
     console.log("Response status:", response.status);
     console.log("Response headers:", Object.fromEntries(response.headers));
@@ -84,10 +85,10 @@ app.get("/*", async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.log("Error response:", errorText);
-      return res.status(response.status).json({ 
+      return res.status(response.status).json({
         error: errorText,
         status: response.status,
-        url: url
+        url: url,
       });
     }
 
@@ -98,7 +99,7 @@ app.get("/*", async (req, res) => {
     res.status(500).json({
       error: "Error occurred while fetching data",
       message: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 });
@@ -106,41 +107,43 @@ app.get("/*", async (req, res) => {
 app.post("/", async (req, res) => {
   try {
     const url = req.query.url || req.body.url;
-    
+
     if (!url) {
-      return res.status(400).json({ error: "URL is required in query or body" });
+      return res
+        .status(400)
+        .json({ error: "URL is required in query or body" });
     }
-    
+
     if (!process.env.AUTHORIZATION) {
-      return res.status(500).json({ 
-        error: "Server configuration error: Missing authorization" 
+      return res.status(500).json({
+        error: "Server configuration error: Missing authorization",
       });
     }
-    
+
     console.log("POST request to URL:", url);
-    
+
     const response = await fetch(url, {
       method: "POST",
       headers: headers,
       body: JSON.stringify(req.body.data || req.body),
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.log("POST Error response:", errorText);
-      return res.status(response.status).json({ 
+      return res.status(response.status).json({
         error: errorText,
-        status: response.status 
+        status: response.status,
       });
     }
-    
+
     const data = await response.json();
     res.json(data);
   } catch (error) {
     console.error("POST Fetch error:", error);
     res.status(500).json({
       error: "Error occurred while fetching data",
-      message: error.message
+      message: error.message,
     });
   }
 });
